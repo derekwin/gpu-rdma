@@ -22,8 +22,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -Ofast -ffast-math -funroll-loops -m
 #add_compile_options("-std=c++17")
 #set(CMAKE_CXX_FLAGS "-O0  -ggdb")
 
-find_library(IBVERBS_LIBRARY ibverbs HINTS /home/atr/local/lib)
-find_library(RDMACM_LIBRARY rdmacm HINTS /home/atr/local/lib)
+#find_library(IBVERBS_LIBRARY ibverbs HINTS /home/atr/local/lib)
+#find_library(RDMACM_LIBRARY rdmacm HINTS /home/atr/local/lib)
+find_library(IBVERBS_LIBRARY ibverbs HINTS)
+find_library(RDMACM_LIBRARY rdmacm HINTS)
 
 link_libraries(pthread ${IBVERBS_LIBRARY} ${RDMACM_LIBRARY})
 
