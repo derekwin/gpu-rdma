@@ -14,8 +14,13 @@ cmake --build build
 ```
 
 ## make (cuda, cuda_example)
+```
 cd src/cuda
 make
+```
 
+## run
+```
 ./cuda_rdma_server
 ./cuda_rdma_client -a 192.168.2.242 -s textstring
+```
