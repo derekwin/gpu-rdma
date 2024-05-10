@@ -25,10 +25,11 @@
 
 #include <rdma/rdma_cma.h>
 #include <infiniband/verbs.h>
+#include <hip/hip_runtime.h>
 
 /* Error Macro*/
 #define rdma_error(msg, args...) do {\
-	fprintf(stderr, "%s : %d : ERROR : "msg, __FILE__, __LINE__, ## args);\
+	fprintf(stderr, "%s : %d : ERROR : " msg, __FILE__, __LINE__, ## args);\
 }while(0);
 
 #ifdef ACN_RDMA_DEBUG 
@@ -92,6 +93,10 @@ int process_rdma_cm_event(struct rdma_event_channel *echannel,
  * @permission: OR of IBV_ACCESS_* permissions as defined for the enum ibv_access_flags
  */
 struct ibv_mr* rdma_buffer_alloc(struct ibv_pd *pd, 
+		uint32_t length, 
+		enum ibv_access_flags permission);
+
+struct ibv_mr* rdma_buffer_alloc_rocm(struct ibv_pd *pd, 
 		uint32_t length, 
 		enum ibv_access_flags permission);
 

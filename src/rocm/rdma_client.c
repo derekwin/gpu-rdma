@@ -25,12 +25,15 @@ static struct ibv_send_wr client_send_wr, *bad_client_send_wr = NULL;
 static struct ibv_recv_wr server_recv_wr, *bad_server_recv_wr = NULL;
 static struct ibv_sge client_send_sge, server_recv_sge;
 /* Source and Destination buffers, where RDMA operations source and sink */
-static char *src = NULL, *dst = NULL; 
+static char *src = NULL, *dst = NULL; // device
+static char *src_host = NULL, *dst_host = NULL;
 
 /* This is our testing function */
 static int check_src_dst() 
 {
-	return memcmp((void*) src, (void*) dst, strlen(src));
+	// 先把dst显存数据拷贝到dst_host内存数据，然后比较内存
+	hipMemcpy(src_host, src, strlen(optarg)*sizeof(int), hipMemcpyDeviceToHost);
+	return memcmp((void*) src_host, (void*) dst_host, strlen(src_host));
 }
 
 /* This function prepares client side connection resources for an RDMA connection */
@@ -239,13 +242,14 @@ static int client_connect_to_server()
  * from the server. The client-side metadata on the server is _not_ used because
  * this program is client driven. But it shown here how to do it for the illustration
  * purposes
+ * 交换buffer的元信息，客户端向服务端发送，并从服务端获取服务端的元信息。
  */
 static int client_xchange_metadata_with_server()
 {
 	struct ibv_wc wc[2];
 	int ret = -1;
-	client_src_mr = rdma_buffer_register(pd,
-			src,
+	client_src_mr = rdma_buffer_register(pd,  // 内存注册到客户端pd
+			src,	// 客户端的真实内存
 			strlen(src),
 			(IBV_ACCESS_LOCAL_WRITE|
 			 IBV_ACCESS_REMOTE_READ|
@@ -259,7 +263,7 @@ static int client_xchange_metadata_with_server()
 	client_metadata_attr.length = client_src_mr->length; 
 	client_metadata_attr.stag.local_stag = client_src_mr->lkey;
 	/* now we register the metadata memory */
-	client_metadata_mr = rdma_buffer_register(pd,
+	client_metadata_mr = rdma_buffer_register(pd,  // 客户端的metadata
 			&client_metadata_attr,
 			sizeof(client_metadata_attr),
 			IBV_ACCESS_LOCAL_WRITE);
@@ -272,13 +276,13 @@ static int client_xchange_metadata_with_server()
 	client_send_sge.length = (uint32_t) client_metadata_mr->length;
 	client_send_sge.lkey = client_metadata_mr->lkey;
 	/* now we link to the send work request */
-	bzero(&client_send_wr, sizeof(client_send_wr));
+	bzero(&client_send_wr, sizeof(client_send_wr));	// 构建write request
 	client_send_wr.sg_list = &client_send_sge;
 	client_send_wr.num_sge = 1;
 	client_send_wr.opcode = IBV_WR_SEND;
 	client_send_wr.send_flags = IBV_SEND_SIGNALED;
 	/* Now we post it */
-	ret = ibv_post_send(client_qp, 
+	ret = ibv_post_send(client_qp, // 发送write request
 		       &client_send_wr,
 	       &bad_client_send_wr);
 	if (ret) {
@@ -468,6 +472,7 @@ int main(int argc, char **argv) {
 	server_sockaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 	/* buffers are NULL */
 	src = dst = NULL; 
+	src_host = dst_host = NULL; 
 	/* Parse Command Line Arguments */
 	while ((option = getopt(argc, argv, "s:a:p:")) != -1) {
 		switch (option) {
@@ -475,17 +480,35 @@ int main(int argc, char **argv) {
 				printf("Passed string is : %s , with count %u \n", 
 						optarg, 
 						(unsigned int) strlen(optarg));
-				src = calloc(strlen(optarg) , 1);
-				if (!src) {
-					rdma_error("Failed to allocate memory : -ENOMEM\n");
+				src_host = calloc(strlen(optarg) , 1); // 分配源内存
+				if (!src_host) {
+					rdma_error("Failed to allocate host memory : -ENOMEM\n");
 					return -ENOMEM;
 				}
 				/* Copy the passes arguments */
-				strncpy(src, optarg, strlen(optarg));
-				dst = calloc(strlen(optarg), 1);
+				strncpy(src_host, optarg, strlen(optarg)); // 将字符串传入src
+
+				hipMalloc(&src, strlen(optarg)*sizeof(int)); // 分配显存
+				if (!src) {
+					rdma_error("Failed to allocate device memory : -ENOMEM\n");
+					free(src_host);
+					return -ENOMEM;
+				}
+				hipMemcpy(src, src_host, strlen(optarg)*sizeof(int), hipMemcpyHostToDevice); // 复制到显存
+				
+				dst_host = calloc(strlen(optarg), 1);    // 分配目的内存
+				if (!dst_host) {
+					rdma_error("Failed to allocate destination host memory, -ENOMEM\n");
+					free(src_host);
+					hipfree(src);
+					return -ENOMEM;
+				}
+				hipMalloc(&dst, strlen(optarg)*sizeof(int));  // 分配显存
 				if (!dst) {
-					rdma_error("Failed to allocate destination memory, -ENOMEM\n");
-					free(src);
+					rdma_error("Failed to allocate destination device memory, -ENOMEM\n");
+					free(src_host);
+					free(dst_host);
+					hipfree(src);
 					return -ENOMEM;
 				}
 				break;

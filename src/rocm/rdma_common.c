@@ -37,6 +37,7 @@ void show_rdma_buffer_attr(struct rdma_buffer_attr *attr){
 	printf("---------------------------------------------------------\n");
 }
 
+// 内存分配逻辑
 struct ibv_mr* rdma_buffer_alloc(struct ibv_pd *pd, uint32_t size,
     enum ibv_access_flags permission) 
 {
@@ -54,6 +55,31 @@ struct ibv_mr* rdma_buffer_alloc(struct ibv_pd *pd, uint32_t size,
 	mr = rdma_buffer_register(pd, buf, size, permission);
 	if(!mr){
 		free(buf);
+	}
+	return mr;
+}
+
+// rocm显存分配逻辑 server端用
+struct ibv_mr* rdma_buffer_alloc_rocm(struct ibv_pd *pd, uint32_t size,
+    enum ibv_access_flags permission) 
+{
+  	void *d_buf;
+	struct ibv_mr *mr = NULL;
+	if (!pd) {
+		rdma_error("Protection domain is NULL \n");
+		return NULL;
+	}
+
+	hipMalloc(&d_buf, size);
+
+	if (!d_buf) {
+		rdma_error("failed to allocate rocm buffer, -ENOMEM\n");
+		return NULL;
+	}
+	debug("Buffer allocated: %p , len: %u \n", d_buf, size);
+	mr = rdma_buffer_register(pd, d_buf, size, permission);
+	if(!mr){
+		hipFree(d_buf);
 	}
 	return mr;
 }
