@@ -22,7 +22,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -Ofast -ffast-math -funroll-loops -m
 
 find_library(IBVERBS_LIBRARY ibverbs)
 find_library(RDMACM_LIBRARY rdmacm)
-
 link_libraries(pthread ${IBVERBS_LIBRARY} ${RDMACM_LIBRARY})
 
 include_directories("${PROJECT_SOURCE_DIR}")
