@@ -6,5 +6,10 @@ rm Makefile
 rm -r ./build
 
 cd src/cuda && make clean
+cd -
 cd src/cuda_example && make clean
-cd src/host && make clean
+cd -
+cd src/rocm && make clean
+cd -
+cd src/rocm_example && make clean
+cd -

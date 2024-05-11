@@ -25,8 +25,8 @@ static struct ibv_send_wr client_send_wr, *bad_client_send_wr = NULL;
 static struct ibv_recv_wr server_recv_wr, *bad_server_recv_wr = NULL;
 static struct ibv_sge client_send_sge, server_recv_sge;
 /* Source and Destination buffers, where RDMA operations source and sink */
-static char *src = NULL, *dst = NULL; // device
-static char *src_host = NULL, *dst_host = NULL;
+static void *src = NULL, *dst = NULL; // device
+static void *src_host = NULL, *dst_host = NULL;
 
 /* This is our testing function */
 static int check_src_dst() 
@@ -500,7 +500,7 @@ int main(int argc, char **argv) {
 				if (!dst_host) {
 					rdma_error("Failed to allocate destination host memory, -ENOMEM\n");
 					free(src_host);
-					hipfree(src);
+					hipFree(src);
 					return -ENOMEM;
 				}
 				hipMalloc(&dst, strlen(optarg)*sizeof(int));  // 分配显存
@@ -508,7 +508,7 @@ int main(int argc, char **argv) {
 					rdma_error("Failed to allocate destination device memory, -ENOMEM\n");
 					free(src_host);
 					free(dst_host);
-					hipfree(src);
+					hipFree(src);
 					return -ENOMEM;
 				}
 				break;

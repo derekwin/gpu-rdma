@@ -1,7 +1,7 @@
 #include <hip/hip_runtime.h>
 #include <stdio.h>
 
-void main() {
+int main() {
 	void *d_buf;
 	hipMalloc(&d_buf, 2);
 	printf("Hello, world!\n");
