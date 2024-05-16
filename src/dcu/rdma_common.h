@@ -10,7 +10,6 @@
 #ifndef RDMA_COMMON_H
 #define RDMA_COMMON_H
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -26,6 +25,8 @@
 #include <rdma/rdma_cma.h>
 #include <infiniband/verbs.h>
 #include <hip/hip_runtime.h>
+
+#include "rocm.h"
 
 /* Error Macro*/
 #define rdma_error(msg, args...) do {\

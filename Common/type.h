@@ -1,3 +1,6 @@
+#ifndef TYPE_H
+#define TYPE_H
+
 #include <stdio.h>
 
 // status
@@ -15,6 +18,8 @@ typedef enum memory_type {
     UCS_MEMORY_TYPE_RDMA,          /**< RDMA device memory */
     UCS_MEMORY_TYPE_UNKNOWN
 } memory_type_t;
+
+typedef uint8_t sys_device_t;
 
 typedef struct mem_attr {
     memory_type_t     mem_type;
@@ -35,8 +40,6 @@ typedef struct sys_bus_id {
     uint8_t  function; /* range: 0 to 7 */
 } sys_bus_id_t;
 
-typedef uint8_t sys_device_t;
-
 // log
 typedef enum {
     LOG_LEVEL_ERROR,        /* Error is returned to the user */
@@ -45,7 +48,8 @@ typedef enum {
     LOG_LEVEL_DEBUG,        /* Low-volume debugging */
 } log_level_t;
 
-const char *ucm_log_level_names[] = {
+
+static const char *ucm_log_level_names[] = {
     [LOG_LEVEL_ERROR] = "ERROR",
     [LOG_LEVEL_WARN]  = "WARN",
     [LOG_LEVEL_INFO]  = "INFO",
@@ -61,3 +65,5 @@ const char *ucm_log_level_names[] = {
 #define log_warn(_fmt, ...)         __log(LOG_LEVEL_WARN, _fmt,  ## __VA_ARGS__)
 #define log_info(_fmt, ...)         __log(LOG_LEVEL_INFO, _fmt, ## __VA_ARGS__)
 #define log_debug(_fmt, ...)        __log(LOG_LEVEL_DEBUG, _fmt, ##  __VA_ARGS__)
+
+#endif /* TYPE_H */

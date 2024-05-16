@@ -5,6 +5,7 @@
         "initializer_list": "c",
         "utility": "c",
         "stdio.h": "c",
-        "compare": "c"
+        "compare": "c",
+        "rdma_common.h": "c"
     }
 }

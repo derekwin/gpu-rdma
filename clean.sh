@@ -5,11 +5,13 @@ rm CMakeCache.txt
 rm Makefile
 rm -r ./build
 
-cd src/cuda && make clean
+cd src/nvgpu && make clean
 cd -
-cd src/cuda_example && make clean
+cd src/nvgpu_example && make clean
 cd -
-cd src/rocm && make clean
+cd src/dcu && make clean
 cd -
-cd src/rocm_example && make clean
+cd src/dcu_example && make clean
+cd -
+cd src/mlu && make clean
 cd -

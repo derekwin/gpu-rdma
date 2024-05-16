@@ -4,7 +4,6 @@
  * Authors: Animesh Trivedi
  *          atrivedi@apache.org 
  */
-
 #include "rdma_common.h"
 
 void show_rdma_cmid(struct rdma_cm_id *id)
@@ -64,16 +63,20 @@ struct ibv_mr* rdma_buffer_alloc_rocm(struct ibv_pd *pd, uint32_t size,
     enum ibv_access_flags permission) 
 {
   	void *d_buf;
+	status_t status;
 	struct ibv_mr *mr = NULL;
 	if (!pd) {
 		rdma_error("Protection domain is NULL \n");
 		return NULL;
 	}
 
-	hipMalloc(&d_buf, size);
-
+	status = rocm_mem_alloc(size, MEMORY_TYPE_GPU, &d_buf);
+	if (status != STATUS_SUCCESS) {
+		rdma_error("failed to allocate device buffer, -ENOMEM\n");
+		return NULL;
+	}
 	if (!d_buf) {
-		rdma_error("failed to allocate rocm buffer, -ENOMEM\n");
+		rdma_error("failed to allocate device buffer, -ENOMEM\n");
 		return NULL;
 	}
 	debug("Buffer allocated: %p , len: %u \n", d_buf, size);
@@ -94,6 +97,7 @@ struct ibv_mr *rdma_buffer_register(struct ibv_pd *pd,
 		return NULL;
 	}
 	mr = ibv_reg_mr(pd, addr, length, permission);
+	// ibv_reg_dmabuf_mr()  这个接口
 	if (!mr) {
 		rdma_error("Failed to create mr on buffer, errno: %d \n", -errno);
 		return NULL;

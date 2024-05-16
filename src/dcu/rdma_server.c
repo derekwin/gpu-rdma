@@ -297,14 +297,14 @@ static int send_server_metadata_to_client()
 	* do RDMA READs and WRITEs. */
 	// enum ibv_access_flags access = (IBV_ACCESS_LOCAL_WRITE|IBV_ACCESS_REMOTE_READ|IBV_ACCESS_REMOTE_WRITE);
 	enum ibv_access_flags access = IBV_ACCESS_REMOTE_WRITE;
-	server_buffer_mr = rdma_buffer_alloc(pd /* which protection domain */, 
-			client_metadata_attr.length /* what size to allocate */, 
-			access /* access permissions */);
-//    server_buffer_mr = rdma_buffer_alloc_rocm(pd /* which protection domain */, // 改为分配显存
-// 	       client_metadata_attr.length /* what size to allocate */,  // 服务端按照客户端的size分配了内存大小
-// 	       (IBV_ACCESS_LOCAL_WRITE|
-// 	       IBV_ACCESS_REMOTE_READ|
-// 	       IBV_ACCESS_REMOTE_WRITE) /* access permissions */); 
+	// server_buffer_mr = rdma_buffer_alloc(pd /* which protection domain */, 
+	// 		client_metadata_attr.length /* what size to allocate */, 
+	// 		access /* access permissions */);
+   	server_buffer_mr = rdma_buffer_alloc_rocm(pd /* which protection domain */, // 分配显存
+	       client_metadata_attr.length /* what size to allocate */,  // 服务端按照客户端的size分配了显存
+	       (IBV_ACCESS_LOCAL_WRITE|
+	       IBV_ACCESS_REMOTE_READ|
+	       IBV_ACCESS_REMOTE_WRITE) /* access permissions */); 
        if(!server_buffer_mr){
 	       rdma_error("Server failed to create a buffer \n");
 	       /* we assume that it is due to out of memory error */
@@ -436,8 +436,16 @@ void usage()
 }
 
 int main(int argc, char **argv) 
-{
-	int ret, option;
+{		
+	int ret = 0;
+	status_t status;
+	status = prepare_gpu_driver();
+	if (status == STATUS_ERROR) {
+		rdma_error("Failed to setup GPU driver , ret = %d \n", status);
+		return ret;
+	}
+
+	int option;
 	struct sockaddr_in server_sockaddr;
 	bzero(&server_sockaddr, sizeof server_sockaddr);
 	server_sockaddr.sin_family = AF_INET; /* standard IP NET address */
