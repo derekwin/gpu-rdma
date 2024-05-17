@@ -300,7 +300,7 @@ static int send_server_metadata_to_client()
 	// server_buffer_mr = rdma_buffer_alloc(pd /* which protection domain */, 
 	// 		client_metadata_attr.length /* what size to allocate */, 
 	// 		access /* access permissions */);
-   	server_buffer_mr = rdma_buffer_alloc_rocm(pd /* which protection domain */, // 分配显存
+   	server_buffer_mr = rdma_buffer_alloc_cnnl(pd /* which protection domain */, // 分配显存
 	       client_metadata_attr.length /* what size to allocate */,  // 服务端按照客户端的size分配了显存
 	       (IBV_ACCESS_LOCAL_WRITE|
 	       IBV_ACCESS_REMOTE_READ|

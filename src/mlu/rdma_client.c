@@ -32,7 +32,10 @@ static void *src_host = NULL, *dst_host = NULL;
 static int check_src_dst() 
 {
 	// 先把dst显存数据拷贝到dst_host内存数据，然后比较内存
-	hipMemcpy(src_host, src, strlen(optarg), hipMemcpyDeviceToHost);
+	cnrtMemcpy(dst_host, dst, strlen(optarg), CNRT_MEM_TRANS_DIR_DEV2HOST);
+	log_info("src_host: %s", (char *)src_host);
+	log_info("src: %s", (char *)src);
+	log_info("dst_host: %s", (char *)dst_host);
 	return memcmp((void*) src_host, (void*) dst_host, strlen(src_host));
 }
 
@@ -444,8 +447,10 @@ static int client_disconnect_and_clean()
 	rdma_buffer_deregister(client_src_mr);	
 	rdma_buffer_deregister(client_dst_mr);	
 	/* We free the buffers */
-	free(src);
-	free(dst);
+	cnnl_mem_free(src);
+	cnnl_mem_free(dst);
+	free(src_host);
+	free(dst_host);
 	/* Destroy protection domain */
 	ret = ibv_dealloc_pd(pd);
 	if (ret) {
@@ -497,7 +502,7 @@ int main(int argc, char **argv) {
 				/* Copy the passes arguments */
 				strncpy(src_host, optarg, strlen(optarg)); // 将字符串传入src
 
-				status = rocm_mem_alloc(strlen(optarg), MEMORY_TYPE_GPU, &src);
+				status = cnnl_mem_alloc(strlen(optarg), MEMORY_TYPE_GPU, &src);
 				if (status != STATUS_SUCCESS) {
 					rdma_error("failed to allocate src device buffer, -ENOMEM\n");
 					return -ENOMEM;
@@ -507,16 +512,17 @@ int main(int argc, char **argv) {
 					free(src_host);
 					return -ENOMEM;
 				}
-				hipMemcpy(src, src_host, strlen(optarg), hipMemcpyHostToDevice); // 复制到显存
-				
+				// 复制到显存
+				cnrtMemcpy(src, src_host, strlen(optarg), CNRT_MEM_TRANS_DIR_HOST2DEV);
+
 				dst_host = calloc(strlen(optarg), 1);    // 分配目的内存
 				if (!dst_host) {
 					rdma_error("Failed to allocate destination host memory, -ENOMEM\n");
 					free(src_host);
-					rocm_mem_free(&src);
+					cnnl_mem_free(&src);
 					return -ENOMEM;
 				}
-				status = rocm_mem_alloc(strlen(optarg), MEMORY_TYPE_GPU, &dst);
+				status = cnnl_mem_alloc(strlen(optarg), MEMORY_TYPE_GPU, &dst);
 				if (status != STATUS_SUCCESS) {
 					rdma_error("failed to allocate dst device buffer, -ENOMEM\n");
 					return -ENOMEM;
@@ -525,7 +531,7 @@ int main(int argc, char **argv) {
 					rdma_error("Failed to allocate des device memory, -ENOMEM\n");
 					free(src_host);
 					free(dst_host);
-					rocm_mem_free(&src);
+					cnnl_mem_free(&src);
 					return -ENOMEM;
 				}
 				break;
@@ -564,36 +570,36 @@ int main(int argc, char **argv) {
 		rdma_error("Failed to setup client connection , ret = %d \n", ret);
 		return ret;
 	}
-	log_info("client_pre_post_recv_buffer done \n");
+	log_info("client_pre_post_recv_buffer done");
 	ret = client_connect_to_server();
 	if (ret) { 
 		rdma_error("Failed to setup client connection , ret = %d \n", ret);
 		return ret;
 	}
-	log_info("client_connect_to_server() done \n");
+	log_info("client_connect_to_server done");
 	ret = client_xchange_metadata_with_server();
 	if (ret) {
 		rdma_error("Failed to setup client connection , ret = %d \n", ret);
 		return ret;
 	}
-	log_info("client_xchange_meta done \n");
+	log_info("client_xchange_meta done");
 	ret = client_remote_memory_ops();
 	if (ret) {
 		rdma_error("Failed to finish remote memory ops, ret = %d \n", ret);
 		return ret;
 	}
-	log_info("client_remote_memory_ops done \n");
+	log_info("client_remote_memory_ops done");
 	if (check_src_dst()) {
 		rdma_error("src and dst buffers do not match \n");
 	} else {
 		printf("...\nSUCCESS, source and destination buffers match \n");
 	}
-	log_info("client check_src_dst done \n");
+	log_info("client check_src_dst done");
 	ret = client_disconnect_and_clean();
 	if (ret) {
 		rdma_error("Failed to cleanly disconnect and clean up resources \n");
 	}
-	log_info("client_disconnect_and_clean \n");
+	log_info("client_disconnect_and_clean");
 	return ret;
 }
 

@@ -6,6 +6,7 @@
         "utility": "c",
         "stdio.h": "c",
         "compare": "c",
-        "rdma_common.h": "c"
+        "rdma_common.h": "c",
+        "cnrt.h": "c"
     }
 }

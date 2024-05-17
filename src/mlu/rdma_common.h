@@ -24,9 +24,8 @@
 
 #include <rdma/rdma_cma.h>
 #include <infiniband/verbs.h>
-#include <hip/hip_runtime.h>
 
-#include "rocm.h"
+#include "cnnl_warpper.h"
 
 /* Error Macro*/
 #define rdma_error(msg, args...) do {\
@@ -97,7 +96,7 @@ struct ibv_mr* rdma_buffer_alloc(struct ibv_pd *pd,
 		uint32_t length, 
 		enum ibv_access_flags permission);
 
-struct ibv_mr* rdma_buffer_alloc_rocm(struct ibv_pd *pd, 
+struct ibv_mr* rdma_buffer_alloc_cnnl(struct ibv_pd *pd, 
 		uint32_t length, 
 		enum ibv_access_flags permission);
 

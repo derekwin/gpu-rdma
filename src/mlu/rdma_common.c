@@ -58,8 +58,8 @@ struct ibv_mr* rdma_buffer_alloc(struct ibv_pd *pd, uint32_t size,
 	return mr;
 }
 
-// rocm显存分配逻辑 server端用
-struct ibv_mr* rdma_buffer_alloc_rocm(struct ibv_pd *pd, uint32_t size,
+// cnnl显存分配逻辑 server端用
+struct ibv_mr* rdma_buffer_alloc_cnnl(struct ibv_pd *pd, uint32_t size,
     enum ibv_access_flags permission) 
 {
   	void *d_buf;
@@ -70,7 +70,7 @@ struct ibv_mr* rdma_buffer_alloc_rocm(struct ibv_pd *pd, uint32_t size,
 		return NULL;
 	}
 
-	status = rocm_mem_alloc(size, MEMORY_TYPE_GPU, &d_buf);
+	status = cnnl_mem_alloc(size, MEMORY_TYPE_GPU, &d_buf);
 	if (status != STATUS_SUCCESS) {
 		rdma_error("failed to allocate device buffer, -ENOMEM\n");
 		return NULL;
@@ -82,7 +82,7 @@ struct ibv_mr* rdma_buffer_alloc_rocm(struct ibv_pd *pd, uint32_t size,
 	debug("Buffer allocated: %p , len: %u \n", d_buf, size);
 	mr = rdma_buffer_register(pd, d_buf, size, permission);
 	if(!mr){
-		hipFree(d_buf);
+		cnnl_mem_free(d_buf);
 	}
 	return mr;
 }
@@ -97,7 +97,7 @@ struct ibv_mr *rdma_buffer_register(struct ibv_pd *pd,
 		return NULL;
 	}
 	mr = ibv_reg_mr(pd, addr, length, permission);
-	// ibv_reg_dmabuf_mr()  这个接口
+	// ibv_reg_dmabuf_mr()  支持dmabuf的接口
 	if (!mr) {
 		rdma_error("Failed to create mr on buffer, errno: %d \n", -errno);
 		return NULL;
