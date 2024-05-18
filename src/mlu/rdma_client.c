@@ -36,7 +36,7 @@ static int check_src_dst()
 	log_info("src_host: %s", (char *)src_host);
 	log_info("src: %s", (char *)src);
 	log_info("dst_host: %s", (char *)dst_host);
-	return memcmp((void*) src_host, (void*) dst_host, strlen(src_host));
+	return memcmp((void*) src_host, (void*) dst_host, strlen((char*)src_host));
 }
 
 /* This function prepares client side connection resources for an RDMA connection */

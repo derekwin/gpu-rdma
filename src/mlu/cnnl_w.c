@@ -1,7 +1,6 @@
-#include "cnnl_warpper.h"
+#include "cnnl_w.h"
 
 // cnnl
-
 bool LaunchBlocking = false;
 
 status_t prepare_gpu_driver()
@@ -14,29 +13,20 @@ status_t prepare_gpu_driver()
 }
 
 // cnnl device init
-
-void initDevice(int *dev, cnrtQueue_t *queue, mluOpHandle_t *handle)
-{
-  CNRT_CHECK(cnrtGetDevice(dev));
-  CNRT_CHECK(cnrtSetDevice(*dev));
-
-  CNRT_CHECK(cnrtQueueCreate(queue));
-
-  mluOpCreate(handle);
-  mluOpSetQueue(*handle, *queue);
-}
-
 status_t cnnl_init(void)
 {
     static pthread_mutex_t cnnl_init_mutex = PTHREAD_MUTEX_INITIALIZER;
     static volatile int cnnl_initialized = 0;
     status_t status = STATUS_SUCCESS;
+    CNresult ret;
+    
+    // cnInit Driver
+    ret = cnInit(0);
+    if (ret != CN_SUCCESS) {
+        log_error("failed to cnInit %d", ret);
+        return STATUS_ERROR;
+    }
 
-    // init device
-    int dev;
-    mluOpHandle_t handle = NULL;
-    cnrtQueue_t queue = NULL;
-    initDevice(&dev, &queue, &handle);
     cnnl_initialized = 1;
 
 end:
@@ -72,15 +62,26 @@ status_t cnnl_mem_alloc(size_t length,
                                   void **address_p)
 {
     CNresult ret;
+    CNaddr *addr;
+    cn_uint64_t len = length;
 
     if ((mem_type != MEMORY_TYPE_GPU) && (mem_type != MEMORY_TYPE_GPU_MANAGED)) {
         return STATUS_UNSUPPORTED;
     }
-
-    ret = cnMallocPeerAble(*address_p, length);
-
+    log_info("alloc len %zu.", len);
+    // ret = cnMallocPeerAble((CNaddr *)*address_p, length);
+    // ret = cnMallocPeerAble(addr, len);
+    ret = cnMalloc(addr, len);
+    if (ret == CN_ERROR_NOT_INITIALIZED) {
+        log_error("CNDrv has not been initialized with cnInit or CNDrv fails to be initialized.");
+        return STATUS_ERROR;
+    }
+    if (ret == CN_ERROR_INVALID_VALUE) {
+        log_error("The parameters passed to this API are not within an acceptable value range.");
+        return STATUS_ERROR;
+    }
     if (ret != CN_SUCCESS) {
-        log_error("failed to allocate memory");
+        log_error("failed to allocate memory %d.", ret);
         return STATUS_ERROR;
     }
 

@@ -4,6 +4,7 @@
 #include "cnrt.h"
 #include "mlu_op.h"
 #include "cn_api.h" // CNresult
+
 #include "type.h"
 
 #include <pthread.h>

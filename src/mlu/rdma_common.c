@@ -82,7 +82,7 @@ struct ibv_mr* rdma_buffer_alloc_cnnl(struct ibv_pd *pd, uint32_t size,
 	debug("Buffer allocated: %p , len: %u \n", d_buf, size);
 	mr = rdma_buffer_register(pd, d_buf, size, permission);
 	if(!mr){
-		cnnl_mem_free(d_buf);
+		cnnl_mem_free(&d_buf);
 	}
 	return mr;
 }
