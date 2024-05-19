@@ -32,7 +32,10 @@ static void *src_host = NULL, *dst_host = NULL;
 static int check_src_dst() 
 {
 	// 先把dst显存数据拷贝到dst_host内存数据，然后比较内存
-	cudaMemcpy(src_host, src, strlen(optarg)*sizeof(int), cudaMemcpyDeviceToHost);
+	cudaMemcpy(dst_host, dst, strlen(src_host), cudaMemcpyDeviceToHost);
+	log_info("src_host: %s", (char *)src_host);
+	log_info("src: %s", (char *)src);
+	log_info("dst_host: %s", (char *)dst_host);
 	return memcmp((void*) src_host, (void*) dst_host, strlen(src_host));
 }
 
@@ -444,8 +447,10 @@ static int client_disconnect_and_clean()
 	rdma_buffer_deregister(client_src_mr);	
 	rdma_buffer_deregister(client_dst_mr);	
 	/* We free the buffers */
-	free(src);
-	free(dst);
+	cuda_mem_free(src);
+	cuda_mem_free(dst);
+	free(src_host);
+	free(dst_host);
 	/* Destroy protection domain */
 	ret = ibv_dealloc_pd(pd);
 	if (ret) {
@@ -465,8 +470,17 @@ void usage() {
 }
 
 int main(int argc, char **argv) {
+
+	int ret = 0;
+	status_t status;
+	status = prepare_gpu_driver();
+	if (status == STATUS_ERROR) {
+		rdma_error("Failed to setup GPU driver , ret = %d \n", status);
+		return ret;
+	}
+
 	struct sockaddr_in server_sockaddr;
-	int ret, option;
+	int option;
 	bzero(&server_sockaddr, sizeof server_sockaddr);
 	server_sockaddr.sin_family = AF_INET;
 	server_sockaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
@@ -488,27 +502,35 @@ int main(int argc, char **argv) {
 				/* Copy the passes arguments */
 				strncpy(src_host, optarg, strlen(optarg)); // 将字符串传入src
 
-				cudaMalloc(&src, strlen(optarg)*sizeof(int)); // 分配显存
+				status = cuda_mem_alloc(strlen(optarg), MEMORY_TYPE_GPU, &src);
+				if (status != STATUS_SUCCESS) {
+					rdma_error("failed to allocate src device buffer, -ENOMEM\n");
+					return -ENOMEM;
+				}
 				if (!src) {
-					rdma_error("Failed to allocate device memory : -ENOMEM\n");
+					rdma_error("Failed to allocate src device memory : -ENOMEM\n");
 					free(src_host);
 					return -ENOMEM;
 				}
-				cudaMemcpy(src, src_host, strlen(optarg)*sizeof(int), cudaMemcpyHostToDevice); // 复制到显存
+				cudaMemcpy(src, src_host, strlen(optarg), cudaMemcpyHostToDevice); // 复制到显存
 				
 				dst_host = calloc(strlen(optarg), 1);    // 分配目的内存
 				if (!dst_host) {
 					rdma_error("Failed to allocate destination host memory, -ENOMEM\n");
 					free(src_host);
-					cudaFree(src);
+					cuda_mem_free(&src);
 					return -ENOMEM;
 				}
-				cudaMalloc(&dst, strlen(optarg)*sizeof(int));  // 分配显存
+				status = cuda_mem_alloc(strlen(optarg), MEMORY_TYPE_GPU, &dst);
+				if (status != STATUS_SUCCESS) {
+					rdma_error("failed to allocate dst device buffer, -ENOMEM\n");
+					return -ENOMEM;
+				}
 				if (!dst) {
-					rdma_error("Failed to allocate destination device memory, -ENOMEM\n");
+					rdma_error("Failed to allocate des device memory, -ENOMEM\n");
 					free(src_host);
 					free(dst_host);
-					cudaFree(src);
+					cuda_mem_free(&src);
 					return -ENOMEM;
 				}
 				break;
@@ -547,30 +569,36 @@ int main(int argc, char **argv) {
 		rdma_error("Failed to setup client connection , ret = %d \n", ret);
 		return ret;
 	}
+	log_info("client_pre_post_recv_buffer done");
 	ret = client_connect_to_server();
 	if (ret) { 
 		rdma_error("Failed to setup client connection , ret = %d \n", ret);
 		return ret;
 	}
+	log_info("client_connect_to_server done");
 	ret = client_xchange_metadata_with_server();
 	if (ret) {
 		rdma_error("Failed to setup client connection , ret = %d \n", ret);
 		return ret;
 	}
+	log_info("client_xchange_meta done");
 	ret = client_remote_memory_ops();
 	if (ret) {
 		rdma_error("Failed to finish remote memory ops, ret = %d \n", ret);
 		return ret;
 	}
+	log_info("client_remote_memory_ops done");
 	if (check_src_dst()) {
 		rdma_error("src and dst buffers do not match \n");
 	} else {
 		printf("...\nSUCCESS, source and destination buffers match \n");
 	}
+	log_info("client check_src_dst done");
 	ret = client_disconnect_and_clean();
 	if (ret) {
 		rdma_error("Failed to cleanly disconnect and clean up resources \n");
 	}
+	log_info("client_disconnect_and_clean");
 	return ret;
 }
 

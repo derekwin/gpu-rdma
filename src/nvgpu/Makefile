@@ -160,7 +160,7 @@ else ifneq ($(TARGET_ARCH),$(HOST_ARCH))
         HOST_COMPILER ?= powerpc64le-linux-gnu-g++
     endif
 endif
-HOST_COMPILER ?= g++
+HOST_COMPILER ?= gcc
 NVCC          := $(CUDA_PATH)/bin/nvcc -ccbin $(HOST_COMPILER)
 
 # internal flags
@@ -338,6 +338,7 @@ endif
 
 # add librarie for libverb rocm
 LIBRARIES += -libverbs -lrdmacm
+ALL_CCFLAGS += -DHAVE_CUDA_RUNTIME=1
 
 ################################################################################
 
@@ -359,12 +360,14 @@ rdma_common.o: rdma_common.c
 	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
 rdma_server.o: rdma_server.c
 	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
+cuda_w.o: cuda_w.c
+	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
 
-cuda_rdma_client: rdma_client.o rdma_common.o
+cuda_rdma_client: rdma_client.o rdma_common.o cuda_w.o
 	$(EXEC) $(NVCC) $(ALL_LDFLAGS) $(GENCODE_FLAGS) -o $@ $+ $(LIBRARIES)
 	$(EXEC) mkdir -p ../../bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)
 	$(EXEC) cp $@ ../../bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)
-cuda_rdma_server: rdma_server.o rdma_common.o
+cuda_rdma_server: rdma_server.o rdma_common.o cuda_w.o
 	$(EXEC) $(NVCC) $(ALL_LDFLAGS) $(GENCODE_FLAGS) -o $@ $+ $(LIBRARIES)
 	$(EXEC) mkdir -p ../../bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)
 	$(EXEC) cp $@ ../../bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)

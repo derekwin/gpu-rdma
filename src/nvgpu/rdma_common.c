@@ -6,6 +6,7 @@
  */
 
 #include "rdma_common.h"
+#include "cuda_w.h"
 
 void show_rdma_cmid(struct rdma_cm_id *id)
 {
@@ -70,7 +71,7 @@ struct ibv_mr* rdma_buffer_alloc_cuda(struct ibv_pd *pd, uint32_t size,
 		return NULL;
 	}
 
-	cudaMalloc(&d_buf, size);
+	cuda_mem_alloc(strlen(optarg), MEMORY_TYPE_GPU, &d_buf);
 
 	if (!d_buf) {
 		rdma_error("failed to allocate rocm buffer, -ENOMEM\n");
@@ -79,7 +80,7 @@ struct ibv_mr* rdma_buffer_alloc_cuda(struct ibv_pd *pd, uint32_t size,
 	debug("Buffer allocated: %p , len: %u \n", d_buf, size);
 	mr = rdma_buffer_register(pd, d_buf, size, permission);
 	if(!mr){
-		cudaFree(d_buf);
+		cuda_mem_free(d_buf);
 	}
 	return mr;
 }

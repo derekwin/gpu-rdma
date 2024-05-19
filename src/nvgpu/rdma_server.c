@@ -437,7 +437,15 @@ void usage()
 
 int main(int argc, char **argv) 
 {
-	int ret, option;
+	int ret = 0;
+	status_t status;
+	status = prepare_gpu_driver();
+	if (status == STATUS_ERROR) {
+		rdma_error("Failed to setup GPU driver , ret = %d \n", status);
+		return ret;
+	}
+
+	int option;
 	struct sockaddr_in server_sockaddr;
 	bzero(&server_sockaddr, sizeof server_sockaddr);
 	server_sockaddr.sin_family = AF_INET; /* standard IP NET address */
