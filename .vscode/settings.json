@@ -8,6 +8,7 @@
         "compare": "c",
         "rdma_common.h": "c",
         "cnrt.h": "c",
-        "mlu_op.h": "c"
+        "mlu_op.h": "c",
+        "cn_api.h": "c"
     }
 }

@@ -22,6 +22,6 @@ status_t cnnl_mem_alloc(size_t length,
                                   memory_type_t mem_type,
                                   void **address_p);
 status_t cnnl_mem_free(void **address_p);
-
+status_t cnnl_mem_cpy(void *dst, void *src, uint64_t len);
 #endif /* CNNL_H */
 

@@ -32,7 +32,8 @@ static void *src_host = NULL, *dst_host = NULL;
 static int check_src_dst() 
 {
 	// 先把dst显存数据拷贝到dst_host内存数据，然后比较内存
-	cnrtMemcpy(dst_host, dst, strlen(optarg), CNRT_MEM_TRANS_DIR_DEV2HOST);
+	// cnMemcpy(dst_host, dst, strlen(src_host));
+	cnnl_mem_cpy(dst_host, dst,strlen(src_host));
 	log_info("src_host: %s", (char *)src_host);
 	log_info("src: %s", (char *)src);
 	log_info("dst_host: %s", (char *)dst_host);
@@ -507,13 +508,16 @@ int main(int argc, char **argv) {
 					rdma_error("failed to allocate src device buffer, -ENOMEM\n");
 					return -ENOMEM;
 				}
+				log_info("allocate memory %p.", &src);
 				if (!src) {
 					rdma_error("Failed to allocate src device memory : -ENOMEM\n");
 					free(src_host);
 					return -ENOMEM;
 				}
 				// 复制到显存
-				cnrtMemcpy(src, src_host, strlen(optarg), CNRT_MEM_TRANS_DIR_HOST2DEV);
+				// cnMemcpy(src, src_host, strlen(optarg));
+				log_info("allocate memory %p %p.", src, src_host);
+				cnnl_mem_cpy(src, src_host, strlen(optarg));
 
 				dst_host = calloc(strlen(optarg), 1);    // 分配目的内存
 				if (!dst_host) {

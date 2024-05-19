@@ -6,9 +6,9 @@ bool LaunchBlocking = false;
 status_t prepare_gpu_driver()
 {
     int ret = STATUS_SUCCESS;
-#if HAVE_CNNL_RUNTIME
+// #if HAVE_CNNL_RUNTIME
     ret = cnnl_init();
-#endif
+// #endif
     return ret;
 }
 
@@ -25,6 +25,14 @@ status_t cnnl_init(void)
     if (ret != CN_SUCCESS) {
         log_error("failed to cnInit %d", ret);
         return STATUS_ERROR;
+    }
+
+    // need create context first
+    CNcontext context;
+	ret = cnCtxCreate(&context, 0, 0);
+	if (ret != CN_SUCCESS) {
+        log_error("failed to create cnCtx %d.", ret);
+        return -1;
     }
 
     cnnl_initialized = 1;
@@ -62,16 +70,16 @@ status_t cnnl_mem_alloc(size_t length,
                                   void **address_p)
 {
     CNresult ret;
-    CNaddr *addr;
+    CNaddr addr;
     cn_uint64_t len = length;
 
     if ((mem_type != MEMORY_TYPE_GPU) && (mem_type != MEMORY_TYPE_GPU_MANAGED)) {
         return STATUS_UNSUPPORTED;
     }
     log_info("alloc len %zu.", len);
-    // ret = cnMallocPeerAble((CNaddr *)*address_p, length);
+    ret = cnMallocPeerAble(&addr, len);
     // ret = cnMallocPeerAble(addr, len);
-    ret = cnMalloc(addr, len);
+    // ret = cnMalloc(&addr, len);
     if (ret == CN_ERROR_NOT_INITIALIZED) {
         log_error("CNDrv has not been initialized with cnInit or CNDrv fails to be initialized.");
         return STATUS_ERROR;
@@ -84,18 +92,31 @@ status_t cnnl_mem_alloc(size_t length,
         log_error("failed to allocate memory %d.", ret);
         return STATUS_ERROR;
     }
-
+    
+    void *addr_p = &addr;
+    *address_p= addr_p;
+    log_info("allocate memory %p %p.", addr_p, address_p);
     return STATUS_SUCCESS;
 }
 
 status_t cnnl_mem_free(void **address_p)
 {
     CNresult ret;
-    ret = cnFree((CNaddr)*address_p);
+    CNaddr* addr = (CNaddr*)*address_p;
+    ret = cnFree(*addr);
     if (ret != CN_SUCCESS) {
         log_error("failed to free memory");
         return STATUS_ERROR;
     }
 
+    return STATUS_SUCCESS;
+}
+
+status_t cnnl_mem_cpy(void *dst, void *src, uint64_t len)
+{   
+    log_info("allocate memory %p %p.", dst, src);
+    CNaddr* dst_a = (CNaddr*)dst;
+    CNaddr* src_a = (CNaddr*)src;
+    cnMemcpy(*dst_a, *src_a, len);
     return STATUS_SUCCESS;
 }
