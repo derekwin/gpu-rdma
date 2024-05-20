@@ -1,9 +1,3 @@
-/*
- * Implementation of the common RDMA functions. 
- *
- * Authors: Animesh Trivedi
- *          atrivedi@apache.org 
- */
 #include "rdma_common.h"
 
 void show_rdma_cmid(struct rdma_cm_id *id)
@@ -84,6 +78,7 @@ struct ibv_mr* rdma_buffer_alloc_cnnl(struct ibv_pd *pd, uint32_t size,
 	if(!mr){
 		cnnl_mem_free(&d_buf);
 	}
+	log_info("mr register successed.");
 	return mr;
 }
 
@@ -139,12 +134,14 @@ int process_rdma_cm_event(struct rdma_event_channel *echannel,
 		struct rdma_cm_event **cm_event)
 {
 	int ret = 1;
-	ret = rdma_get_cm_event(echannel, cm_event);
+	log_info("test");
+	ret = rdma_get_cm_event(echannel, cm_event);  // server在这里出了Segmentation fault，从客户端看是客户端读取出错
 	if (ret) {
 		rdma_error("Failed to retrieve a cm event, errno: %d \n",
 				-errno);
 		return -errno;
 	}
+	log_info("test2");
 	/* lets see, if it was a good event */
 	if(0 != (*cm_event)->status){
 		rdma_error("CM event has non zero status: %d\n", (*cm_event)->status);

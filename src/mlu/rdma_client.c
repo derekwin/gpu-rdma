@@ -384,14 +384,14 @@ static int client_remote_memory_ops()
 		return -errno;
 	}
 	/* at this point we are expecting 1 work completion for the write */
-	ret = process_work_completion_events(io_completion_channel, 
+	ret = process_work_completion_events(io_completion_channel,   // 客户端显示这里出错了
 			&wc, 1);
 	if(ret != 1) {
 		rdma_error("We failed to get 1 work completions , ret = %d \n",
 				ret);
 		return ret;
 	}
-	debug("Client side READ is complete \n");
+	log_info("rdma_buffer_register(pd");
 	return 0;
 }
 
@@ -508,7 +508,7 @@ int main(int argc, char **argv) {
 					rdma_error("failed to allocate src device buffer, -ENOMEM\n");
 					return -ENOMEM;
 				}
-				log_info("allocate memory %p.", &src);
+				log_info("allocate memory &src %p, src %p.", &src, src);
 				if (!src) {
 					rdma_error("Failed to allocate src device memory : -ENOMEM\n");
 					free(src_host);
@@ -516,9 +516,9 @@ int main(int argc, char **argv) {
 				}
 				// 复制到显存
 				// cnMemcpy(src, src_host, strlen(optarg));
-				log_info("allocate memory %p %p.", src, src_host);
+				log_info("allocate memory src device %p, src host %p.", src, src_host);
 				cnnl_mem_cpy(src, src_host, strlen(optarg));
-
+				log_info("allocate memory &src %p, src %p.", &src, src);
 				dst_host = calloc(strlen(optarg), 1);    // 分配目的内存
 				if (!dst_host) {
 					rdma_error("Failed to allocate destination host memory, -ENOMEM\n");

@@ -305,11 +305,11 @@ static int send_server_metadata_to_client()
 	       (IBV_ACCESS_LOCAL_WRITE|
 	       IBV_ACCESS_REMOTE_READ|
 	       IBV_ACCESS_REMOTE_WRITE) /* access permissions */); 
-       if(!server_buffer_mr){
-	       rdma_error("Server failed to create a buffer \n");
-	       /* we assume that it is due to out of memory error */
-	       return -ENOMEM;
-       }
+	if(!server_buffer_mr){
+		rdma_error("Server failed to create a buffer \n");
+		/* we assume that it is due to out of memory error */
+		return -ENOMEM;
+	}
        /* This buffer is used to transmit information about the above 
 	* buffer to the client. So this contains the metadata about the server 
 	* buffer. Hence this is called metadata buffer. Since this is already 
@@ -318,48 +318,51 @@ static int send_server_metadata_to_client()
 	* client the address of the server buffer. 
 	// 分配内存后，将内存注册到protect domain
 	*/
-       server_metadata_attr.address = (uint64_t) server_buffer_mr->addr;
-       server_metadata_attr.length = (uint32_t) server_buffer_mr->length;
-       server_metadata_attr.stag.local_stag = (uint32_t) server_buffer_mr->lkey;
-       server_metadata_mr = rdma_buffer_register(pd /* which protection domain*/, 
-		       &server_metadata_attr /* which memory to register */, 
-		       sizeof(server_metadata_attr) /* what is the size of memory */,
-		       IBV_ACCESS_LOCAL_WRITE /* what access permission */);
-       if(!server_metadata_mr){
-	       rdma_error("Server failed to create to hold server metadata \n");
-	       /* we assume that this is due to out of memory error */
-	       return -ENOMEM;
-       }
+	server_metadata_attr.address = (uint64_t) server_buffer_mr->addr;
+	server_metadata_attr.length = (uint32_t) server_buffer_mr->length;
+	server_metadata_attr.stag.local_stag = (uint32_t) server_buffer_mr->lkey;
+	server_metadata_mr = rdma_buffer_register(pd /* which protection domain*/, 
+			&server_metadata_attr /* which memory to register */, 
+			sizeof(server_metadata_attr) /* what is the size of memory */,
+			IBV_ACCESS_LOCAL_WRITE /* what access permission */);
+	if(!server_metadata_mr){
+		rdma_error("Server failed to create to hold server metadata \n");
+		/* we assume that this is due to out of memory error */
+		return -ENOMEM;
+	}
+	log_info("Server create to hold server metadata successed.");
        /* We need to transmit this buffer. So we create a send request. 
 	* A send request consists of multiple SGE elements. In our case, we only
 	* have one 
 	*/
-       server_send_sge.addr = (uint64_t) &server_metadata_attr;
-       server_send_sge.length = sizeof(server_metadata_attr);
-       server_send_sge.lkey = server_metadata_mr->lkey;
-       /* now we link this sge to the send request */
-       bzero(&server_send_wr, sizeof(server_send_wr));
-       server_send_wr.sg_list = &server_send_sge;
-       server_send_wr.num_sge = 1; // only 1 SGE element in the array 
-       server_send_wr.opcode = IBV_WR_SEND; // This is a send request 
-       server_send_wr.send_flags = IBV_SEND_SIGNALED; // We want to get notification 
-       /* This is a fast data path operation. Posting an I/O request */
-       ret = ibv_post_send(client_qp /* which QP */, 
-		       &server_send_wr /* Send request that we prepared before */, 
-		       &bad_server_send_wr /* In case of error, this will contain failed requests */);
-       if (ret) {
-	       rdma_error("Posting of server metdata failed, errno: %d \n",
-			       -errno);
-	       return -errno;
-       }
-       /* We check for completion notification */
-       ret = process_work_completion_events(io_completion_channel, &wc, 1);
-       if (ret != 1) {
-	       rdma_error("Failed to send server metadata, ret = %d \n", ret);
-	       return ret;
-       }
-       debug("Local buffer metadata has been sent to the client \n");
-       return 0;
+	server_send_sge.addr = (uint64_t) &server_metadata_attr;
+	server_send_sge.length = sizeof(server_metadata_attr);
+	server_send_sge.lkey = server_metadata_mr->lkey;
+	/* now we link this sge to the send request */
+	bzero(&server_send_wr, sizeof(server_send_wr));
+	server_send_wr.sg_list = &server_send_sge;
+	server_send_wr.num_sge = 1; // only 1 SGE element in the array 
+	server_send_wr.opcode = IBV_WR_SEND; // This is a send request 
+	server_send_wr.send_flags = IBV_SEND_SIGNALED; // We want to get notification 
+	/* This is a fast data path operation. Posting an I/O request */
+	ret = ibv_post_send(client_qp /* which QP */, 
+			&server_send_wr /* Send request that we prepared before */, 
+			&bad_server_send_wr /* In case of error, this will contain failed requests */);
+	if (ret) {
+		rdma_error("Posting of server metdata failed, errno: %d \n",
+				-errno);
+		return -errno;
+	}
+	log_info("Posting of server metdata successed.");
+	/* We check for completion notification */
+	ret = process_work_completion_events(io_completion_channel, &wc, 1);
+	if (ret != 1) {
+		rdma_error("Failed to send server metadata, ret = %d \n", ret);
+		return ret;
+	}
+	debug("Local buffer metadata has been sent to the client \n");
+	log_info("Local buffer metadata has been sent to the client.");
+	return 0;
 }
 
 /* This is server side logic. Server passively waits for the client to call 
@@ -367,6 +370,7 @@ static int send_server_metadata_to_client()
 static int disconnect_and_cleanup()
 {
 	struct rdma_cm_event *cm_event = NULL;
+	log_info("start cleanup");
 	int ret = -1;
        /* Now we wait for the client to send us disconnect event */
        debug("Waiting for cm event: RDMA_CM_EVENT_DISCONNECTED\n");
@@ -494,6 +498,7 @@ int main(int argc, char **argv)
 		rdma_error("Failed to send server metadata to the client, ret = %d \n", ret);
 		return ret;
 	}
+	log_info("send_server_metadata_to_client() done");
 	ret = disconnect_and_cleanup();
 	if (ret) { 
 		rdma_error("Failed to clean up resources properly, ret = %d \n", ret);

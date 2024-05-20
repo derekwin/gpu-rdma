@@ -1,12 +1,3 @@
-/*
- * Header file for the common RDMA routines used in the server/client example 
- * program. 
- *
- * Author: Animesh Trivedi 
- *          atrivedi@apache.org 
- *
- */
-
 #ifndef RDMA_COMMON_H
 #define RDMA_COMMON_H
 

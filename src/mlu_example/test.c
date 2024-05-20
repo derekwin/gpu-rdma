@@ -43,7 +43,7 @@ int main() {
     strncpy(src_host, test, strlen(test)); 
     cnMemcpy((CNaddr)addr, (CNaddr)src_host, strlen(test));
 
-    printf("world! %s\n", (char *)src_host);
+    printf("world! %s, %s\n", (char *)src_host, addr);
 	ret = cnFree(addr);  // free的为什么是对象，不是传入指针
 	if (ret != CN_SUCCESS) {
         printf("failed to free memory");

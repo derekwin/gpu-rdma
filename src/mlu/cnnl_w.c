@@ -65,6 +65,10 @@ end:
 // }
 
 // cnnl mem alloc
+
+//https://github1s.com/NVIDIA/nccl/blob/master/src/include/alloc.h
+// 参考下上面nccl的分配存储的逻辑，是否需要增加各种其他设置分配显存才可以被使用
+
 status_t cnnl_mem_alloc(size_t length,
                                   memory_type_t mem_type,
                                   void **address_p)
@@ -95,7 +99,7 @@ status_t cnnl_mem_alloc(size_t length,
     
     void *addr_p = &addr;
     *address_p= addr_p;
-    log_info("allocate memory %p %p.", addr_p, address_p);
+    log_info("allocate device memory &addr %p, address_p %p.", addr_p, address_p);
     return STATUS_SUCCESS;
 }
 
@@ -114,9 +118,14 @@ status_t cnnl_mem_free(void **address_p)
 
 status_t cnnl_mem_cpy(void *dst, void *src, uint64_t len)
 {   
-    log_info("allocate memory %p %p.", dst, src);
-    CNaddr* dst_a = (CNaddr*)dst;
-    CNaddr* src_a = (CNaddr*)src;
-    cnMemcpy(*dst_a, *src_a, len);
+    log_info("cp memory to %p from %p.", dst, src);
+    CNaddr dst_a = (CNaddr)dst;
+    CNaddr src_a = (CNaddr)src;
+    // CNresult ret = cnMemcpy(*dst_a, *src_a, len);
+    CNresult ret = cnMemcpy(dst_a, src_a, (cn_uint64_t)len+1); // 结束符
+    if (ret != CN_SUCCESS) {
+        log_error("failed to cp memory %d", ret);
+        return STATUS_ERROR;
+    }
     return STATUS_SUCCESS;
 }
