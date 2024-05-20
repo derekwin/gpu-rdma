@@ -78,6 +78,7 @@ end:
 // }
 
 // cuda mem alloc
+//https://github1s.com/NVIDIA/nccl/blob/master/src/include/alloc.h 是否需要增加其他设置
 status_t cuda_mem_alloc(size_t length,
                                   memory_type_t mem_type,
                                   void **address_p)

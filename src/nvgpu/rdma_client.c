@@ -251,12 +251,14 @@ static int client_xchange_metadata_with_server()
 {
 	struct ibv_wc wc[2];
 	int ret = -1;
+	log_info("start xchange");
 	client_src_mr = rdma_buffer_register(pd,  // 内存注册到客户端pd
 			src,	// 客户端的真实内存
 			strlen(src),
 			(IBV_ACCESS_LOCAL_WRITE|
 			 IBV_ACCESS_REMOTE_READ|
 			 IBV_ACCESS_REMOTE_WRITE));
+	log_info("rdma_buffer_register(pd");
 	if(!client_src_mr){
 		rdma_error("Failed to register the first buffer, ret = %d \n", ret);
 		return ret;
@@ -512,7 +514,9 @@ int main(int argc, char **argv) {
 					free(src_host);
 					return -ENOMEM;
 				}
-				cudaMemcpy(src, src_host, strlen(optarg), cudaMemcpyHostToDevice); // 复制到显存
+				int ret = cudaMemcpy(src, src_host, strlen(optarg), cudaMemcpyDefault); // 复制到显存
+				log_info("src_host = %s, ret %d", (char*)src_host, ret);
+				// log_info("src = %s", (char*)src);
 				
 				dst_host = calloc(strlen(optarg), 1);    // 分配目的内存
 				if (!dst_host) {

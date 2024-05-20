@@ -36,7 +36,7 @@ bash clean.sh
 ## run
 ```
 ./cuda_rdma_server
-./cuda_rdma_client -a 192.168.2.242 -s textstring
+./cuda_rdma_client -a 192.168.2.253 -s textstring
 ```
 
 ```
