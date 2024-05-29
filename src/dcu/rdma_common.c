@@ -118,7 +118,8 @@ void rdma_buffer_free(struct ibv_mr *mr)
 	void *to_free = mr->addr;
 	rdma_buffer_deregister(mr);
 	debug("Buffer %p free'ed\n", to_free);
-	free(to_free);
+	// free(to_free);
+	rocm_mem_free(&to_free); // 这里显存释放有问题，后续再说
 }
 
 void rdma_buffer_deregister(struct ibv_mr *mr) 
