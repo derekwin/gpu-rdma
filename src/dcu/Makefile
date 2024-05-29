@@ -1,16 +1,16 @@
 build: all
 
-
 IFLAGS += -I../../Common
 IFLAGS += -I/opt/dtk/include/hip
 IFLAGS += -I/opt/dtk/include/hsa
 
 CFLAGS += -DHAVE_HSA_AMD_PORTABLE_EXPORT_DMABUF=1
 CFLAGS += -DHAVE_ROCM_RUNTIME=1
+CFLAGS += -D__HIP_PLATFORM_AMD__
 # CFLAGS += -DROCM_DMABUF_SUPPERTED
 
 LFLAGS += -libverbs -lrdmacm
-# LFLAGS += -L/opt/dtk/hsa/lib # libhsa-runtime64.so
+LFLAGS += -L/opt/dtk/hsa/lib # libhsa-runtime64.so
 
 all:
 	hipcc ${IFLAGS} ${CFLAGS} -c rdma_common.c -o rdma_common.o

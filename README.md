@@ -48,3 +48,9 @@ bash clean.sh
 ./cnnl_rdma_server
 ./cnnl_rdma_client -a 192.168.2.249 -s textstring
 ```
+
+
+# 海光的问题
+`source /opt/dtk/env.sh`
+`source /opt/dtk-23.10.1/env.sh`
+dtk-22.10.1-vdcu

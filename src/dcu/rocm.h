@@ -6,7 +6,6 @@
 // hipError_t hipSuccess
 #include <hsa_ext_amd.h>
 #include "type.h"
-
 #include <pthread.h>
 
 #include <dlfcn.h>
