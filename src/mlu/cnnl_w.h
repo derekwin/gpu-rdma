@@ -12,6 +12,9 @@
 #include <dlfcn.h>
 #include <sys/utsname.h>
 
+static CNaddr addr_src;
+static CNaddr addr_dst;
+
 status_t prepare_gpu_driver();
 
 void initDevice(int *dev, cnrtQueue_t *queue, mluOpHandle_t *handle);
@@ -20,7 +23,7 @@ static status_t cnnl_thread_init();
 
 status_t cnnl_mem_alloc(size_t length,
                                   memory_type_t mem_type,
-                                  void **address_p);
+                                  void **address_p, bool src);
 status_t cnnl_mem_free(void **address_p);
 status_t cnnl_mem_cpy(void *dst, void *src, uint64_t len);
 #endif /* CNNL_H */

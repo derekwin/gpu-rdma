@@ -66,24 +66,24 @@ end:
 
 // cnnl mem alloc
 
-//https://github1s.com/NVIDIA/nccl/blob/master/src/include/alloc.h
-// 参考下上面nccl的分配存储的逻辑，是否需要增加各种其他设置分配显存才可以被使用
-
 status_t cnnl_mem_alloc(size_t length,
                                   memory_type_t mem_type,
-                                  void **address_p)
+                                  void **address_p,
+                                bool src)
 {
     CNresult ret;
-    CNaddr addr;
+    // CNaddr addr;
     cn_uint64_t len = length;
 
     if ((mem_type != MEMORY_TYPE_GPU) && (mem_type != MEMORY_TYPE_GPU_MANAGED)) {
         return STATUS_UNSUPPORTED;
     }
     log_info("alloc len %zu.", len);
-    ret = cnMallocPeerAble(&addr, len);
-    // ret = cnMallocPeerAble(addr, len);
-    // ret = cnMalloc(&addr, len);
+    if (src)
+    ret = cnMallocPeerAble(&addr_src, len);
+    else
+    ret = cnMallocPeerAble(&addr_dst, len);
+
     if (ret == CN_ERROR_NOT_INITIALIZED) {
         log_error("CNDrv has not been initialized with cnInit or CNDrv fails to be initialized.");
         return STATUS_ERROR;
@@ -97,7 +97,12 @@ status_t cnnl_mem_alloc(size_t length,
         return STATUS_ERROR;
     }
     
-    void *addr_p = &addr;
+    void *addr_p = NULL;
+    if (src)
+        addr_p = &addr_src;
+    else
+        addr_p = &addr_dst;
+
     *address_p= addr_p;
     log_info("allocate device memory &addr %p, address_p %p.", addr_p, address_p);
     return STATUS_SUCCESS;

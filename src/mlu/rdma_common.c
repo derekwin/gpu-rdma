@@ -64,7 +64,7 @@ struct ibv_mr* rdma_buffer_alloc_cnnl(struct ibv_pd *pd, uint32_t size,
 		return NULL;
 	}
 
-	status = cnnl_mem_alloc(size, MEMORY_TYPE_GPU, &d_buf);
+	status = cnnl_mem_alloc(size, MEMORY_TYPE_GPU, &d_buf, true);
 	if (status != STATUS_SUCCESS) {
 		rdma_error("failed to allocate device buffer, -ENOMEM\n");
 		return NULL;
@@ -113,7 +113,8 @@ void rdma_buffer_free(struct ibv_mr *mr)
 	void *to_free = mr->addr;
 	rdma_buffer_deregister(mr);
 	debug("Buffer %p free'ed\n", to_free);
-	free(to_free);
+	// free(to_free);
+	cnnl_mem_free(&to_free);
 }
 
 void rdma_buffer_deregister(struct ibv_mr *mr) 

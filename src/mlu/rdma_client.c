@@ -448,8 +448,8 @@ static int client_disconnect_and_clean()
 	rdma_buffer_deregister(client_src_mr);	
 	rdma_buffer_deregister(client_dst_mr);	
 	/* We free the buffers */
-	cnnl_mem_free(src);
-	cnnl_mem_free(dst);
+	cnnl_mem_free(&src);
+	cnnl_mem_free(&dst);
 	free(src_host);
 	free(dst_host);
 	/* Destroy protection domain */
@@ -503,7 +503,7 @@ int main(int argc, char **argv) {
 				/* Copy the passes arguments */
 				strncpy(src_host, optarg, strlen(optarg)); // 将字符串传入src
 
-				status = cnnl_mem_alloc(strlen(optarg), MEMORY_TYPE_GPU, &src);
+				status = cnnl_mem_alloc(strlen(optarg), MEMORY_TYPE_GPU, &src, true);
 				if (status != STATUS_SUCCESS) {
 					rdma_error("failed to allocate src device buffer, -ENOMEM\n");
 					return -ENOMEM;
@@ -526,7 +526,7 @@ int main(int argc, char **argv) {
 					cnnl_mem_free(&src);
 					return -ENOMEM;
 				}
-				status = cnnl_mem_alloc(strlen(optarg), MEMORY_TYPE_GPU, &dst);
+				status = cnnl_mem_alloc(strlen(optarg), MEMORY_TYPE_GPU, &dst, false);
 				if (status != STATUS_SUCCESS) {
 					rdma_error("failed to allocate dst device buffer, -ENOMEM\n");
 					return -ENOMEM;
